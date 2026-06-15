@@ -1,1 +1,1 @@
-from . import mail_resend_message
+# No wizards in Odoo 19.0
