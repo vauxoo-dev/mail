@@ -146,12 +146,13 @@ class MailTrackingEmail(models.Model):
         offset=0,
         limit=None,
         order=None,
+        bypass_access=False,
     ):
         """Override that adds specific access rights of mail.tracking.email, to remove
         ids uid could not see according to our custom rules. Please refer to
         _check_access() for more details about those rules.
         """
-        query = super()._search(domain, offset, limit, order)
+        query = super()._search(domain, offset, limit, order, bypass_access=bypass_access)
         if not self.env.is_superuser():
             records = self.browse(query)
             allowed_ids = self._get_allowed_ids(records.ids)
