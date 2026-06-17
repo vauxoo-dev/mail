@@ -1,8 +1,8 @@
 import {Store} from "@mail/core/common/store_service";
-import {Record} from "@mail/core/common/record";
-import {rpc} from "@web/core/network/rpc";
-import {patch} from "@web/core/utils/patch";
 import {_t} from "@web/core/l10n/translation";
+import {fields} from "@mail/model/misc";
+import {patch} from "@web/core/utils/patch";
+import {rpc} from "@web/core/network/rpc";
 
 // As in the original
 const FETCH_LIMIT = 30;
@@ -10,7 +10,7 @@ const FETCH_LIMIT = 30;
 const StoreServicePatch = {
     setup() {
         super.setup(...arguments);
-        this.failed = Record.one("Thread");
+        this.failed = fields.One("Thread");
     },
 
     onStarted() {
