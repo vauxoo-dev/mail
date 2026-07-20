@@ -17,6 +17,7 @@
     "depends": ["mail"],
     "data": [
         "data/tracking_data.xml",
+        "security/res_groups_security.xml",
         "security/mail_tracking_email_security.xml",
         "security/ir.model.access.csv",
         "views/mail_tracking_email_view.xml",

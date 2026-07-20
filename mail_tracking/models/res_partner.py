@@ -25,7 +25,9 @@ class ResPartner(models.Model):
             partner.email_score = mt_obj.email_score_from_email(partner.email)
             # We don't want performance issues due to heavy ACLs check for large
             # recordsets. Our option is to hide the number for regular users.
-            if not self.env.user.has_group("base.group_system"):
+            if not self.env.user.has_group(
+                "mail_tracking.group_can_see_mail_tracking_stats"
+            ):
                 continue
             partner.tracking_emails_count = len(
                 mt_obj._search([("recipient_address", "=", partner.email.lower())])
