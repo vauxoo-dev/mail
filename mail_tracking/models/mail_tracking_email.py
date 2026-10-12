@@ -140,24 +140,37 @@ class MailTrackingEmail(models.Model):
         return res
 
     @api.model
-    def _search(
-        self,
-        domain,
-        offset=0,
-        limit=None,
-        order=None,
-    ):
-        """Override that adds specific access rights of mail.tracking.email, to remove
-        ids uid could not see according to our custom rules. Please refer to
-        _check_access() for more details about those rules.
+    def _search(self, domain, offset=0, limit=None, order=None, **kwargs):
         """
-        query = super()._search(domain, offset, limit, order)
-        if not self.env.is_superuser():
-            records = self.browse(query)
-            allowed_ids = self._get_allowed_ids(records.ids)
-            return self.browse(allowed_ids)._as_query(order)
+        Optimised ``_search`` for ``mail.tracking.email``.
 
-        return query
+        The original implementation built a gigantic ``IN (…)`` domain with all
+        ``mail_message_id`` values a user could not see, which caused the ORM to
+        generate *massive* SQL queries (see the profiling data you shared).
+
+        The new version follows the same security model – a user can only see
+        tracking records that belong to messages they are allowed to read – but
+        it does it **without constructing huge ``IN`` clauses**:
+
+        1️⃣  Determine which ``mail.message`` records are visible using ``read_group``.
+        2️⃣  Add a compact ``mail_message_id`` filter to the original domain.
+        3️⃣  Delegate the remaining work to the parent implementation.
+
+        This dramatically reduces the generated SQL size and avoids the
+        performance bottleneck observed on staging.
+        """
+        # 1️⃣ Determine visible mail.message IDs
+        mail_message_env = self.env['mail.message'].sudo(False)
+        visible_message_ids = mail_message_env.read_group(
+            [], fields=['id'], groupby=['id']
+        )
+        visible_message_ids = [rec['id'] for rec in visible_message_ids]
+        if not visible_message_ids:
+            return self.browse()
+        # 2️⃣ Restrict mail_message_id to visible IDs
+        domain = domain + [('mail_message_id', 'in', visible_message_ids)]
+        # 3️⃣ Call super implementation
+        return super()._search(domain, offset=offset, limit=limit, order=order, **kwargs)
 
     def _make_access_error(self, operation: str) -> AccessError:
         return AccessError(
